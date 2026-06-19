@@ -13,6 +13,13 @@ export default {
     extend: {
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
+        heading: ['Space Grotesk', 'sans-serif'],
+        mono: ['JetBrains Mono', 'monospace'],
+      },
+      boxShadow: {
+        'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
+        'floating': '0 10px 40px -10px rgba(0, 0, 0, 0.08)',
+        'glow': '0 0 30px -5px rgba(0, 128, 128, 0.6)',
       },
       colors: {
         border: 'hsl(var(--border))',

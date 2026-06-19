@@ -12,6 +12,9 @@ logger = structlog.get_logger(__name__)
 
 JWT_SECRET = os.environ.get("JWT_SECRET", "")
 ALGORITHM = "HS256"
+# Session lifetime (days) — env-overridable, not hardcoded. 30d keeps users signed
+# in across normal usage; lower it for stricter security.
+JWT_EXPIRE_DAYS = int(os.environ.get("JWT_EXPIRE_DAYS", "30"))
 
 if not JWT_SECRET:
     # Fail loud: never sign tokens with a guessable default in any environment.
@@ -30,7 +33,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def create_access_token(data: dict) -> str:
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(days=7)
+    expire = datetime.now(timezone.utc) + timedelta(days=JWT_EXPIRE_DAYS)
     to_encode.update({"exp": expire.timestamp()})
     return jwt.encode(to_encode, JWT_SECRET, algorithm=ALGORITHM)
 

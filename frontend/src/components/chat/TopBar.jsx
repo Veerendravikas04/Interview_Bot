@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Sun, Moon, LogOut, Sparkles } from 'lucide-react'
+import { Sun, Moon, LogOut, Sparkles, Copy, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import {
@@ -14,9 +14,10 @@ import { useChatStore } from '@/store/chatStore'
 import { getTheme, applyTheme } from '@/lib/theme'
 
 export default function TopBar({ onLogout, user }) {
-  const { threads, activeThreadId } = useChatStore()
+  const { threads, activeThreadId, messages } = useChatStore()
   const active = threads.find((t) => t.id === activeThreadId)
   const [theme, setTheme] = useState(getTheme())
+  const [copiedChat, setCopiedChat] = useState(false)
   const name = user?.name || 'Account'
   const email = user?.email || ''
   const initial = (user?.name || user?.email || '?').trim().charAt(0).toUpperCase()
@@ -25,6 +26,27 @@ export default function TopBar({ onLogout, user }) {
     const next = theme === 'dark' ? 'light' : 'dark'
     applyTheme(next)
     setTheme(next)
+  }
+
+  // Copy the whole conversation as a clean transcript (Sophia/RealGenie style).
+  const copyChat = async () => {
+    const transcript = (messages || [])
+      .filter((m) => m.content)
+      .map((m) => `${m.role === 'user' ? 'You' : 'Caliber'}: ${m.content}`)
+      .join('\n\n')
+    if (!transcript) return
+    try {
+      await navigator.clipboard.writeText(transcript)
+    } catch {
+      const ta = document.createElement('textarea')
+      ta.value = transcript
+      document.body.appendChild(ta)
+      ta.select()
+      try { document.execCommand('copy') } catch { /* ignore */ }
+      document.body.removeChild(ta)
+    }
+    setCopiedChat(true)
+    setTimeout(() => setCopiedChat(false), 1500)
   }
 
   return (
@@ -44,6 +66,17 @@ export default function TopBar({ onLogout, user }) {
 
       {/* Right: actions */}
       <div className="flex items-center gap-0.5">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground"
+          onClick={copyChat}
+          disabled={!messages?.length}
+          title="Copy entire chat"
+        >
+          {copiedChat ? <Check className="h-[18px] w-[18px] text-emerald-500" /> : <Copy className="h-[18px] w-[18px]" />}
+        </Button>
+
         <Button
           variant="ghost"
           size="icon"

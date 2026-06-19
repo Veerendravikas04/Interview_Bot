@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,68 +6,93 @@
 
 @layer base {
   :root {
-    /* LIGHT theme (default :root) */
-    --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
+    /* LIGHT theme - Clean Teal & Emerald */
+    --background: 0 0% 100%; /* Pure white background */
+    --foreground: 222 47% 11%; /* Deep slate text #0f172a */
+    
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
+    
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
-    --primary: 221 83% 53%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 210 40% 96%;
+    
+    /* Primary Accent: Deep Teal (#008080) */
+    --primary: 180 100% 25%; 
+    --primary-foreground: 0 0% 100%; /* White text on primary */
+    
+    /* Secondary/Muted: Clean cool gray */
+    --secondary: 210 40% 96.1%; /* #f1f5f9 */
     --secondary-foreground: 222 47% 11%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
-    --accent: 214 95% 95%;
-    --accent-foreground: 222 47% 11%;
+    
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215 16% 47%; /* #64748b */
+    
+    /* Secondary Accent: Emerald Green (#2E8B57) */
+    --accent: 146 50% 36%;
+    --accent-foreground: 0 0% 100%;
+    
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --success: 160 84% 39%;
+    
+    --success: 146 50% 36%;
     --warning: 38 92% 50%;
-    --border: 214 32% 91%;
+    
+    --border: 214 32% 91%; /* Crisp border #e2e8f0 */
     --input: 214 32% 91%;
-    --ring: 221 83% 53%;
-    --radius: 0.75rem;
+    --ring: 180 100% 25%; /* Deep Teal ring */
+    
+    --radius: 1rem; /* rounded-2xl default for a softer look */
 
-    /* legacy vars (Auth/Landing are dark-styled screens) */
-    --bg-primary: #0b1120;
-    --bg-secondary: #111827;
-    --bg-tertiary: #1e293b;
-    --bg-glass: rgba(17, 24, 39, 0.6);
-    --accent-primary: #2563eb;
-    --accent-secondary: #3b82f6;
-    --text-primary: #f8fafc;
-    --text-secondary: #94a3b8;
+    /* Legacy vars mapped to new palette for existing components if any */
+    --bg-primary: #f8fafc;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #f1f5f9;
+    --bg-glass: rgba(255, 255, 255, 0.8);
+    --accent-primary: #8B5CF6;
+    --accent-secondary: #EC4899;
+    --text-primary: #0f172a;
+    --text-secondary: #64748b;
     --success-hex: #10b981;
     --warning-hex: #f59e0b;
     --danger: #ef4444;
-    --border-color: rgba(255, 255, 255, 0.08);
+    --border-color: #e2e8f0;
   }
 
   .dark {
-    /* DARK theme */
-    --background: 222 47% 8%;
-    --foreground: 210 40% 98%;
-    --card: 222 40% 11%;
+    /* DARK theme - OCEANIC DEPTH */
+    --background: 223 49% 8%; /* #0B1120 */
+    --foreground: 210 40% 98%; /* #f8fafc */
+    
+    --card: 222 47% 11%; /* #0f172a */
     --card-foreground: 210 40% 98%;
-    --popover: 222 44% 10%;
+    
+    --popover: 222 47% 11%;
     --popover-foreground: 210 40% 98%;
-    --primary: 221 83% 53%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 217 33% 17%;
+    
+    /* Primary Accent: Deep Teal (#008080) */
+    --primary: 180 100% 25%; 
+    --primary-foreground: 0 0% 100%; /* White text on primary */
+    
+    /* Secondary/Muted: Darker gray/blue for subtle areas */
+    --secondary: 217 33% 17%; /* #1e293b */
     --secondary-foreground: 210 40% 98%;
-    --muted: 217 33% 15%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 217 33% 17%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 84% 60%;
+    
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%; /* #94a3b8 */
+    
+    /* Secondary Accent: Emerald Green (#2E8B57) */
+    --accent: 146 50% 36%;
+    --accent-foreground: 0 0% 100%;
+    
+    --destructive: 0 62% 30%;
     --destructive-foreground: 210 40% 98%;
-    --success: 160 84% 39%;
+    
+    --success: 146 50% 36%;
     --warning: 38 92% 50%;
-    --border: 217 24% 20%;
-    --input: 217 24% 20%;
-    --ring: 221 83% 53%;
+    
+    --border: 217 33% 17%; /* #1e293b */
+    --input: 217 33% 17%;
+    --ring: 180 100% 25%; /* Deep Teal ring */
   }
 
   * {
@@ -81,6 +106,21 @@
     margin: 0;
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
+    letter-spacing: 0px;
+    line-height: 1.5;
+  }
+
+  h1, h2, h3, h4, h5, h6, .font-heading {
+    font-family: 'Space Grotesk', sans-serif;
+    letter-spacing: -0.5px;
+    line-height: 1.2;
+  }
+
+  code, pre, .font-mono, .data-point {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 500;
+    letter-spacing: 0px;
+    line-height: 1.4;
   }
 }
 

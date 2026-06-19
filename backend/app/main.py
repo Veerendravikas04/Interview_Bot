@@ -2,6 +2,7 @@
 from dotenv import load_dotenv
 load_dotenv()
 
+import os
 import traceback
 import structlog
 from fastapi import FastAPI, Request
@@ -20,13 +21,23 @@ logger = structlog.get_logger(__name__)
 app = FastAPI(title="Interview Bot v2")
 
 app.add_middleware(TraceMiddleware)
+
+# CORS origins come from env (comma-separated CORS_ORIGINS), so prod locks down to
+# real frontends while dev keeps localhost working. Credentialed requests can't use
+# a "*" wildcard per the CORS spec, so we always send an explicit allow-list.
+_cors_env = os.environ.get("CORS_ORIGINS", "").strip()
+CORS_ORIGINS = [o.strip() for o in _cors_env.split(",") if o.strip()] or [
+    "http://localhost:3000", "http://127.0.0.1:3000",
+    "http://localhost:5173", "http://127.0.0.1:5173",
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+logger.info("cors_configured", origins=CORS_ORIGINS)
 
 def get_trace_id():
     return structlog.contextvars.get_contextvars().get("trace_id", "unknown")

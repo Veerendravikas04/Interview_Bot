@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Bot, PlayCircle, Shield, Code2, Cloud, Server, Terminal, Lock } from 'lucide-react';
+import { Gauge, PlayCircle, FileSearch, GitBranch, MessagesSquare, Search, Sparkles } from 'lucide-react';
 import './LandingPage.css';
 
 const LandingPage = ({ onGetStarted }) => {
@@ -9,14 +9,13 @@ const LandingPage = ({ onGetStarted }) => {
       {/* Navbar */}
       <nav className="lp-navbar">
         <div className="lp-logo">
-          <Bot size={28} color="#38bdf8" />
+          <Gauge size={28} className="text-primary" />
           Caliber
         </div>
         <div className="lp-nav-links">
           <a href="#features">Features</a>
-          <a href="#curriculum">Curriculum</a>
-          <a href="#success-stories">Success Stories</a>
-          <a href="#pricing">Pricing</a>
+          <a href="#how">How it works</a>
+          <a href="#features">Resume · GitHub · Interview</a>
         </div>
         <div className="lp-nav-actions">
           <button className="lp-btn-ghost" onClick={onGetStarted}>Sign In</button>
@@ -28,75 +27,91 @@ const LandingPage = ({ onGetStarted }) => {
       <section className="lp-hero">
         <div className="lp-hero-content">
           <div className="lp-badge">
-            ✨ NEW: STREAMING REAL-TIME AI AGENTS
+            <Sparkles size={14} /> AI INTERVIEW &amp; RESUME COACH
           </div>
           <h1 className="lp-title">
-            Master Your
-            <span className="lp-title-highlight">Technical</span>
-            <span className="lp-title-highlight">Interview</span>
+            Get hired with
+            <span className="lp-title-highlight">Caliber</span>
           </h1>
           <p className="lp-subtitle">
-            The AI-powered trainer that plans, acts, and reflects on your performance in real-time. Experience a world-class coach available 24/7.
+            One AI coach for the whole job hunt — get an ATS-grounded resume review, a recruiter-style
+            GitHub audit, and adaptive mock interviews that grade you and tell you exactly what to fix.
           </p>
           <div className="lp-hero-actions">
             <button className="lp-btn-primary lp-btn-large" onClick={onGetStarted}>
               Get Started for Free
             </button>
-            <button className="lp-btn-secondary" onClick={() => alert("Demo coming soon!")}>
+            <button className="lp-btn-secondary" onClick={onGetStarted}>
               <PlayCircle size={20} />
-              Watch 3-min Demo
+              Try it now
             </button>
           </div>
           <div className="lp-stats">
             <div className="lp-stat-item">
-              <h3>50k+</h3>
-              <p>Engineers Trained</p>
+              <h3>3-in-1</h3>
+              <p>Resume · GitHub · Interview</p>
             </div>
             <div className="lp-stat-item">
-              <h3>84%</h3>
-              <p>Success Rate</p>
+              <h3>Real-time</h3>
+              <p>Streaming AI responses</p>
             </div>
             <div className="lp-stat-item">
               <h3>24/7</h3>
-              <p>AI Availability</p>
+              <p>Always available</p>
             </div>
           </div>
         </div>
         <div className="lp-hero-visual">
-          <motion.img 
+          <motion.img
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            src="/hero_mockup.png" 
-            alt="Caliber Dashboard Mockup" 
+            src="/hero_mockup.png"
+            alt="Caliber dashboard"
             className="lp-hero-image"
           />
         </div>
       </section>
 
-      {/* Trusted By */}
-      <section className="lp-trusted">
-        <p>TRUSTED BY ENGINEERS FROM TOP-TIER COMPANIES</p>
-        <div className="lp-logos">
-          <div className="lp-logo-item"><Code2 size={20}/> Google</div>
-          <div className="lp-logo-item"><Shield size={20}/> Meta</div>
-          <div className="lp-logo-item"><Cloud size={20}/> Amazon</div>
-          <div className="lp-logo-item"><Terminal size={20}/> Microsoft</div>
-          <div className="lp-logo-item"><Server size={20}/> Netflix</div>
-          <div className="lp-logo-item"><Lock size={20}/> Stripe</div>
+      {/* What Caliber does */}
+      <section className="lp-features" id="features">
+        <p className="lp-features-eyebrow">WHAT CALIBER DOES</p>
+        <h2 className="lp-features-title">Everything you need to get hired</h2>
+        <div className="lp-feature-grid">
+          <div className="lp-feature-card">
+            <div className="lp-feature-icon"><FileSearch size={24} /></div>
+            <h3>ATS Resume Review</h3>
+            <p>Score your resume against any role — with rewritten bullets and the exact keywords recruiter ATS systems scan for.</p>
+          </div>
+          <div className="lp-feature-card">
+            <div className="lp-feature-icon"><GitBranch size={24} /></div>
+            <h3>GitHub Profile Review</h3>
+            <p>A recruiter-style audit of your real repos — activity, READMEs, top projects, and exactly what to fix.</p>
+          </div>
+          <div className="lp-feature-card">
+            <div className="lp-feature-icon"><MessagesSquare size={24} /></div>
+            <h3>Adaptive Mock Interviews</h3>
+            <p>Questions that adapt to your level, graded in real time, with a report on precisely where to improve.</p>
+          </div>
+          <div className="lp-feature-card">
+            <div className="lp-feature-icon"><Search size={24} /></div>
+            <h3>Live Web Search</h3>
+            <p>Grounded, current answers — Caliber checks the web when it needs facts, and never fabricates.</p>
+          </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="lp-cta-wrapper">
+      <section className="lp-cta-wrapper" id="how">
         <div className="lp-cta-card">
-          <h2 className="lp-cta-title">Ready to Ace Your Next Round?</h2>
+          <h2 className="lp-cta-title">Upload your resume. Get hired-ready in minutes.</h2>
           <p className="lp-cta-subtitle">
-            Join 50,000+ engineers who used Caliber to land offers at their dream companies. Start practicing today.
+            Caliber scores your resume against the role, rewrites weak bullets, audits your GitHub like a
+            recruiter, and runs a mock interview — all grounded in your real data, no fabrication.
           </p>
           <div className="lp-cta-actions">
-            <button className="lp-btn-white" onClick={onGetStarted}>Get Lifetime Access</button>
-            <button className="lp-btn-outline" onClick={() => alert("Enterprise sales team will be added soon!")}>Schedule Enterprise Demo</button>
+            <button className="lp-btn-white" onClick={onGetStarted}>Start for Free</button>
+            <button className="lp-btn-outline" onClick={onGetStarted}>Sign In</button>
           </div>
         </div>
       </section>
@@ -106,33 +121,31 @@ const LandingPage = ({ onGetStarted }) => {
         <div className="lp-footer-grid">
           <div className="lp-footer-brand">
             <div className="lp-logo">
-              <Bot size={24} color="#38bdf8" />
+              <Gauge size={24} className="text-primary" />
               Caliber
             </div>
-            <p>The world's most advanced AI platform for engineering interview preparation. Master the craft, land the job.</p>
+            <p>Your AI interview &amp; resume coach — ATS resume reviews, recruiter-style GitHub audits, and adaptive mock interviews, grounded in your real data.</p>
           </div>
           <div className="lp-footer-col">
             <h4>PRODUCT</h4>
             <ul>
-              <li><a href="#features">Features</a></li>
-              <li><a href="#pricing">Pricing</a></li>
-              <li><a href="#updates">Updates</a></li>
-              <li><a href="#api">API Access</a></li>
+              <li><a href="#features">Resume Review</a></li>
+              <li><a href="#features">GitHub Review</a></li>
+              <li><a href="#features">Mock Interviews</a></li>
+              <li><a href="#how">How it works</a></li>
             </ul>
           </div>
           <div className="lp-footer-col">
-            <h4>COMPANY</h4>
+            <h4>GET STARTED</h4>
             <ul>
-              <li><a href="#about">About Us</a></li>
-              <li><a href="#terms">Terms of Service</a></li>
-              <li><a href="#privacy">Privacy Policy</a></li>
-              <li><a href="#support">Contact Support</a></li>
+              <li><a href="#" onClick={(e) => { e.preventDefault(); onGetStarted(); }}>Sign In</a></li>
+              <li><a href="#" onClick={(e) => { e.preventDefault(); onGetStarted(); }}>Create account</a></li>
             </ul>
           </div>
         </div>
         <div className="lp-footer-bottom">
-          <span>© 2024 Interview Systems Inc. All rights reserved.</span>
-          <span>Built for Engineers, by Engineers</span>
+          <span>© 2026 Caliber. All rights reserved.</span>
+          <span>Built for job seekers, grounded in real data.</span>
         </div>
       </footer>
     </div>

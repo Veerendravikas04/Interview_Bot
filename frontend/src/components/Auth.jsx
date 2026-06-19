@@ -1,46 +1,69 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Lock, Mail, User as UserIcon, ArrowRight, ArrowLeft } from 'lucide-react';
+import * as api from '@/lib/services/api';
 
-const Auth = ({ onLoginSuccess, onBack }) => {
-  const [isLogin, setIsLogin] = useState(true);
+// mode: 'login' | 'signup' | 'forgot' | 'reset'
+const Auth = ({ onLoginSuccess, onBack, resetToken }) => {
+  const [mode, setMode] = useState(resetToken ? 'reset' : 'login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const isLogin = mode === 'login';
+  const isSignup = mode === 'signup';
+  const isForgot = mode === 'forgot';
+  const isReset = mode === 'reset';
+
+  const switchMode = (m) => { setMode(m); setError(''); setInfo(''); };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    setLoading(true);
+    setError(''); setInfo(''); setLoading(true);
 
-    const endpoint = isLogin ? '/api/auth/login' : '/api/auth/signup';
-    
     try {
-      const payload = isLogin 
-        ? JSON.stringify({ email, password }) 
+      // ── Forgot: request a reset link ──────────────────────────────
+      if (isForgot) {
+        const res = await api.forgotPassword(email);
+        setInfo(res?.message || 'If that email is registered, a reset link has been sent.');
+        return;
+      }
+      // ── Reset: set a new password with the token ──────────────────
+      if (isReset) {
+        await api.resetPassword(resetToken, password);
+        setInfo('Password updated — you can now log in.');
+        // Clean the ?reset token out of the URL and drop to login.
+        try { window.history.replaceState({}, '', window.location.pathname); } catch (_) { /* ignore */ }
+        setPassword('');
+        setMode('login');
+        return;
+      }
+
+      // ── Login / Signup ────────────────────────────────────────────
+      const endpoint = isLogin ? '/api/auth/login' : '/api/auth/signup';
+      const payload = isLogin
+        ? JSON.stringify({ email, password })
         : JSON.stringify({ email, password, name: fullName });
-        
-      const headers = { 'Content-Type': 'application/json' };
 
       const response = await fetch(`http://localhost:8000${endpoint}`, {
         method: 'POST',
-        headers,
-        body: payload
+        headers: { 'Content-Type': 'application/json' },
+        body: payload,
       });
-
       const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Authentication failed');
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Authentication failed');
-      }
-
-      // Store JWT token
-      const token = data.access_token;
-      localStorage.setItem('careerForgeToken', token);
+      localStorage.setItem('careerForgeToken', data.access_token);
       localStorage.setItem('careerForgeUserId', data.user._id);
-      
+
+      // Password save/autofill is driven by the native browser heuristic via the
+      // real <form> + name + autoComplete attrs (same approach as ReBuddy FE).
+      // We intentionally do NOT call the Credential Management API — on some
+      // Chrome builds it stores silently and suppresses the "Save password?"
+      // prompt, which reads as "it didn't save".
       onLoginSuccess();
     } catch (err) {
       setError(err.message);
@@ -49,159 +72,136 @@ const Auth = ({ onLoginSuccess, onBack }) => {
     }
   };
 
+  const subtitle = isReset ? 'Set a new password'
+    : isForgot ? 'Reset your password'
+    : 'Your AI interview & resume coach';
+
+  const submitLabel = loading ? 'Processing…'
+    : isReset ? 'Set new password'
+    : isForgot ? 'Send reset link'
+    : isLogin ? 'Log in' : 'Sign up';
+
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: '#0b1120', padding: '2rem' }}>
-      <motion.div 
+    <div className="flex justify-center items-center min-h-screen bg-background p-8">
+      <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        style={{ 
-          width: '100%', 
-          maxWidth: '420px', 
-          background: '#0f172a', 
-          borderRadius: '16px',
-          border: '2px solid rgba(139, 92, 246, 0.4)', // Glowing purple border
-          boxShadow: '0 0 50px rgba(139, 92, 246, 0.15)', // Purple glow
-          position: 'relative',
-          overflow: 'hidden'
-        }}
+        className="w-full max-w-[420px] bg-card rounded-[24px] shadow-glow relative overflow-hidden border border-primary/40"
       >
-        {/* Particle effect layer */}
-        <div style={{ position: 'absolute', inset: 0, opacity: 0.3, backgroundImage: 'radial-gradient(circle at 50% 50%, rgba(255,255,255,0.15) 1px, transparent 1px)', backgroundSize: '24px 24px', zIndex: 0 }} />
-
-        <div style={{ position: 'relative', zIndex: 10, padding: '3rem 2rem 2.5rem' }}>
-
-          {onBack && (
+        <div className="relative z-10 p-10 pb-8">
+          {onBack && !isReset && (
             <button
               type="button"
-              onClick={onBack}
-              style={{ position: 'absolute', top: '1rem', left: '1rem', display: 'flex', alignItems: 'center', gap: '0.35rem', background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 500, padding: '0.4rem 0.5rem', borderRadius: '8px', transition: 'color 0.2s' }}
-              onMouseOver={(e) => (e.currentTarget.style.color = '#94a3b8')}
-              onMouseOut={(e) => (e.currentTarget.style.color = '#64748b')}
+              onClick={() => (isForgot ? switchMode('login') : onBack())}
+              className="absolute top-4 left-4 flex items-center gap-1.5 bg-transparent border-none text-muted-foreground cursor-pointer text-sm font-medium p-2 rounded-lg transition-colors hover:text-foreground"
             >
-              <ArrowLeft size={15} /> Back to home
+              <ArrowLeft size={16} /> {isForgot ? 'Back to login' : 'Back'}
             </button>
           )}
 
-          <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-            <h1 style={{ 
-              fontSize: '2.4rem', 
-              fontWeight: '700', 
-              margin: '0 0 0.5rem 0',
-              color: '#3b82f6', // Solid brighter blue like screenshot
-            }}>
+          <div className="text-center mb-8 mt-4">
+            <h1 className="text-4xl font-bold mb-2 font-heading tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               Caliber
             </h1>
-            <p style={{ color: '#64748b', fontSize: '0.9rem', margin: 0 }}>
-              Your AI interview trainer
-            </p>
+            <p className="text-muted-foreground text-sm font-medium">{subtitle}</p>
           </div>
-          
+
           {error && (
-            <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '0.8rem', borderRadius: '8px', marginBottom: '1.5rem', textAlign: 'center', fontSize: '0.875rem', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+            <div className="bg-destructive/10 text-destructive p-3 rounded-xl mb-6 text-center text-sm border border-destructive/20 font-medium">
               {error}
             </div>
           )}
+          {info && (
+            <div className="bg-primary/10 text-primary p-3 rounded-xl mb-6 text-center text-sm border border-primary/20 font-medium">
+              {info}
+            </div>
+          )}
 
-          {/* INNER CARD */}
-          <div style={{ background: '#111827', borderRadius: '16px', padding: '1.5rem', border: '1px solid rgba(255,255,255,0.03)' }}>
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              {!isLogin && (
+          <div className="bg-card rounded-2xl p-6 border border-border/60 shadow-soft">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+              {isSignup && (
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '600', color: '#64748b', marginBottom: '0.5rem' }}>Full Name</label>
-                  <div style={{ position: 'relative' }}>
-                    <UserIcon size={16} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#475569' }} />
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">Full Name</label>
+                  <div className="relative">
+                    <UserIcon size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     <input
-                      type="text"
-                      placeholder="John Doe"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      required
-                      style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 2.5rem', background: '#0b1120', border: '1px solid #1e293b', borderRadius: '8px', color: 'white', fontSize: '0.875rem', outline: 'none', transition: 'border-color 0.2s' }}
-                      onFocus={(e) => e.target.style.borderColor = '#38bdf8'}
-                      onBlur={(e) => e.target.style.borderColor = '#1e293b'}
+                      type="text" name="name" autoComplete="name" placeholder="John Doe"
+                      value={fullName} onChange={(e) => setFullName(e.target.value)} required
+                      className="w-full pl-10 pr-4 py-3 bg-secondary/50 border border-border rounded-xl text-foreground text-sm outline-none transition-all focus:border-primary/60 focus:ring-2 focus:ring-primary/10"
                     />
                   </div>
                 </div>
               )}
 
-              <div>
-                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '600', color: '#64748b', marginBottom: '0.5rem' }}>Email</label>
-                <div style={{ position: 'relative' }}>
-                  <Mail size={16} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#475569' }} />
-                  <input
-                    type="email"
-                    placeholder="name@company.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 2.5rem', background: '#0b1120', border: '1px solid #1e293b', borderRadius: '8px', color: 'white', fontSize: '0.875rem', outline: 'none', transition: 'border-color 0.2s' }}
-                    onFocus={(e) => e.target.style.borderColor = '#38bdf8'}
-                    onBlur={(e) => e.target.style.borderColor = '#1e293b'}
-                  />
+              {(isLogin || isSignup || isForgot) && (
+                <div>
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">Email</label>
+                  <div className="relative">
+                    <Mail size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                    <input
+                      type="email" name="email" autoComplete="email" placeholder="name@company.com"
+                      value={email} onChange={(e) => setEmail(e.target.value)} required
+                      className="w-full pl-10 pr-4 py-3 bg-secondary/50 border border-border rounded-xl text-foreground text-sm outline-none transition-all focus:border-primary/60 focus:ring-2 focus:ring-primary/10"
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
 
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                  <label style={{ fontSize: '0.75rem', fontWeight: '600', color: '#64748b' }}>Password</label>
-                  {isLogin && <span style={{ fontSize: '0.75rem', color: '#2563eb', cursor: 'pointer', fontWeight: '500' }}>Forgot?</span>}
+              {(isLogin || isSignup || isReset) && (
+                <div>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                      {isReset ? 'New Password' : 'Password'}
+                    </label>
+                    {isLogin && (
+                      <button type="button" onClick={() => switchMode('forgot')}
+                        className="text-xs text-primary cursor-pointer font-medium hover:underline bg-transparent border-none p-0">
+                        Forgot?
+                      </button>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                    <input
+                      type="password" name="password"
+                      autoComplete={isLogin ? 'current-password' : 'new-password'}
+                      placeholder="••••••••"
+                      value={password} onChange={(e) => setPassword(e.target.value)} required
+                      className="w-full pl-10 pr-4 py-3 bg-secondary/50 border border-border rounded-xl text-foreground text-sm outline-none transition-all focus:border-primary/60 focus:ring-2 focus:ring-primary/10"
+                    />
+                  </div>
                 </div>
-                <div style={{ position: 'relative' }}>
-                  <Lock size={16} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#475569' }} />
-                  <input
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 2.5rem', background: '#0b1120', border: '1px solid #1e293b', borderRadius: '8px', color: 'white', fontSize: '0.875rem', outline: 'none', transition: 'border-color 0.2s' }}
-                    onFocus={(e) => e.target.style.borderColor = '#38bdf8'}
-                    onBlur={(e) => e.target.style.borderColor = '#1e293b'}
-                  />
-                </div>
-              </div>
+              )}
 
               <button
-                type="submit"
-                disabled={loading}
-                style={{ 
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  padding: '0.875rem', 
-                  background: '#1e3a8a', 
-                  color: '#60a5fa', 
-                  border: 'none', 
-                  borderRadius: '8px', 
-                  fontWeight: '600', 
-                  fontSize: '0.875rem',
-                  marginTop: '0.5rem', 
-                  cursor: loading ? 'not-allowed' : 'pointer', 
-                  opacity: loading ? 0.7 : 1,
-                  transition: 'all 0.2s'
-                }}
-                onMouseOver={(e) => !loading && (e.currentTarget.style.backgroundColor = '#1e40af', e.currentTarget.style.color = 'white')}
-                onMouseOut={(e) => !loading && (e.currentTarget.style.backgroundColor = '#1e3a8a', e.currentTarget.style.color = '#60a5fa')}
+                type="submit" disabled={loading}
+                className="flex justify-center items-center gap-2 py-3.5 bg-gradient-to-r from-primary to-accent text-primary-foreground border-none rounded-xl font-semibold text-sm mt-2 cursor-pointer shadow-soft transition-all hover:opacity-90 disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                {loading ? 'Processing...' : (isLogin ? 'Log in' : 'Sign up')}
-                {!loading && <ArrowRight size={16} />}
+                {submitLabel}
+                {!loading && !isForgot && <ArrowRight size={18} />}
               </button>
             </form>
 
-            <p style={{ textAlign: 'center', marginTop: '1.5rem', color: '#64748b', fontSize: '0.875rem' }}>
-              {isLogin ? "No account? " : "Already have an account? "}
-              <span 
-                onClick={() => setIsLogin(!isLogin)} 
-                style={{ color: '#2563eb', cursor: 'pointer', fontWeight: '500' }}
-              >
-                {isLogin ? 'Sign up' : 'Log in'}
-              </span>
-            </p>
-          </div>
-
-          <div style={{ marginTop: '2.5rem', textAlign: 'center', fontSize: '0.65rem', fontWeight: '600', color: '#334155', letterSpacing: '0.15em' }}>
-            ✦ ENTERPRISE READY ✦
+            {(isLogin || isSignup) && (
+              <p className="text-center mt-6 text-muted-foreground text-sm font-medium">
+                {isLogin ? "No account? " : 'Already have an account? '}
+                <span onClick={() => switchMode(isLogin ? 'signup' : 'login')}
+                  className="text-primary cursor-pointer font-semibold hover:underline">
+                  {isLogin ? 'Sign up' : 'Log in'}
+                </span>
+              </p>
+            )}
+            {isForgot && (
+              <p className="text-center mt-6 text-muted-foreground text-sm font-medium">
+                Remembered it?{' '}
+                <span onClick={() => switchMode('login')} className="text-primary cursor-pointer font-semibold hover:underline">Log in</span>
+              </p>
+            )}
+            {isReset && (
+              <p className="text-center mt-6 text-muted-foreground text-sm font-medium">
+                <span onClick={() => switchMode('login')} className="text-primary cursor-pointer font-semibold hover:underline">Back to login</span>
+              </p>
+            )}
           </div>
         </div>
       </motion.div>

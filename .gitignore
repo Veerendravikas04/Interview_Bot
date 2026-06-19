@@ -9,6 +9,13 @@ __pycache__/
 venv/
 .env
 
+# Runtime logs (mirrored each server start, see core/logging.py)
+logs.txt
+backend/logs.txt
+# Tavily/per-service file logs (upstream tavily_service writes here)
+logs/
+backend/logs/
+
 # OS
 .DS_Store
 Thumbs.db

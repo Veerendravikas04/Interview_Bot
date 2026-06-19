@@ -129,17 +129,22 @@ export default function Sidebar({ onNewChat, onSelect, onLogout, onRename, onDel
     <aside className="flex h-full w-72 shrink-0 flex-col border-r border-border bg-card/30">
       <button
         onClick={onNewChat}
-        className="flex items-center gap-2.5 px-4 py-4 text-left transition-opacity hover:opacity-80"
+        className="flex items-center gap-3 px-5 py-5 text-left transition-opacity hover:opacity-80"
         title="New chat"
       >
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 text-primary">
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-soft">
           <Gauge className="h-5 w-5" />
         </div>
-        <span className="text-lg font-semibold tracking-tight">Caliber</span>
+        <span className="text-2xl font-bold font-heading tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+          Caliber
+        </span>
       </button>
 
-      <div className="px-3 pb-2">
-        <Button onClick={onNewChat} className="w-full justify-start gap-2 shadow-sm">
+      <div className="px-4 pb-3">
+        <Button 
+          onClick={onNewChat} 
+          className="w-full justify-start gap-2 shadow-soft bg-gradient-to-r from-primary/90 to-accent/90 hover:from-primary hover:to-accent border-0 text-primary-foreground font-medium rounded-xl h-10"
+        >
           <Plus className="h-4 w-4" /> New Chat
         </Button>
       </div>

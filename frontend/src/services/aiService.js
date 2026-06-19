@@ -26,12 +26,12 @@ export const uploadResume = async (file) => {
   return await response.json();
 };
 
-export const extractSkills = async (resumeText) => {
+export const extractSkills = async (resumeId, resumeText) => {
   try {
     const response = await fetch(`${API_URL}/resumes/extract-skills`, {
       method: 'POST',
       headers: getHeaders(),
-      body: JSON.stringify({ resumeText })
+      body: JSON.stringify({ resume_id: resumeId, resumeText })
     });
     if (!response.ok) throw new Error("Failed to extract skills");
     const data = await response.json();

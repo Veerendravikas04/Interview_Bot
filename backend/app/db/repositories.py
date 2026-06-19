@@ -39,6 +39,18 @@ def update_thread(user_id: str, thread_id: str, fields: dict):
     )
 
 
+def set_thread_resume(user_id: str, thread_id: str, resume_id: str):
+    """Make resume_id the ACTIVE (latest) resume for the thread, and keep the full
+    history in resume_ids (ChatGPT-style: don't discard earlier uploads)."""
+    return get_db().threads.update_one(
+        {"_id": thread_id, "user_id": user_id, "deleted_at": None},
+        {
+            "$set": {"resume_id": resume_id, "updated_at": _now()},
+            "$addToSet": {"resume_ids": resume_id},
+        },
+    )
+
+
 def soft_delete_thread(user_id: str, thread_id: str):
     return get_db().threads.update_one(
         {"_id": thread_id, "user_id": user_id, "deleted_at": None},

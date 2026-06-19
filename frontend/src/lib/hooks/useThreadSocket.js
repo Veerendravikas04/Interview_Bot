@@ -41,6 +41,15 @@ export function useThreadSocket(threadId, handlers = {}) {
           case 'status':
             h.onStatus?.(data)
             break
+          case 'tool_call':
+            h.onToolCall?.(data)
+            break
+          case 'tool_result':
+            h.onToolResult?.(data)
+            break
+          case 'source_found':
+            h.onSource?.(data)
+            break
           case 'message_complete':
             h.onComplete?.(data)
             break

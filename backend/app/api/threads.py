@@ -46,6 +46,7 @@ async def create_thread(req: ThreadCreateRequest, current_user: dict = Depends(g
         "_id": thread_id,
         "user_id": user_id,
         "resume_id": req.resume_id,
+        "resume_ids": [req.resume_id] if req.resume_id else [],
         "type": req.type or "chat",
         "title": None,
         "status": "active",
@@ -127,6 +128,22 @@ async def attach_resume(thread_id: str, req: AttachResumeRequest, current_user: 
         raise AppError(code="THREAD_NOT_FOUND", message="Conversation not found", status_code=404)
     if not repo.get_resume(user_id, req.resume_id):
         raise AppError(code="RESUME_NOT_FOUND", message="Resume not found", status_code=404)
-    repo.update_thread(user_id, thread_id, {"resume_id": req.resume_id})
+    repo.set_thread_resume(user_id, thread_id, req.resume_id)  # active=latest, keep history
     logger.info("resume_attached", thread_id=thread_id, resume_id=req.resume_id)
     return {"ok": True}
+
+@router.get("/{thread_id}/report")
+async def get_thread_report(thread_id: str, current_user: dict = Depends(get_current_user)):
+    user_id = current_user["_id"]
+    if not repo.get_thread(user_id, thread_id):
+        raise AppError(code="THREAD_NOT_FOUND", message="Conversation not found", status_code=404)
+        
+    from app.services.report import generate_interview_report
+    
+    try:
+        report_data = await generate_interview_report(user_id, thread_id)
+        return report_data
+    except Exception as e:
+        logger.error("get_report_error", error=str(e))
+        raise AppError(code="REPORT_GENERATION_FAILED", message="Failed to generate report", status_code=500)
+

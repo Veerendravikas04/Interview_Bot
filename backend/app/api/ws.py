@@ -1,5 +1,6 @@
 import os
 import re
+import time
 import uuid
 import asyncio
 import structlog
@@ -23,6 +24,8 @@ TOOL_STATUS = {
     "get_resume_text": "Reading your resume…",
     "list_asked_questions": "Reviewing what we've covered…",
     "record_round_grade": "Noting your performance…",
+    "web_search": "Searching the web…",
+    "github_profile": "Checking your GitHub…",
 }
 
 
@@ -135,14 +138,27 @@ async def websocket_endpoint(websocket: WebSocket, thread_id: str, token: str = 
             resume = repo.get_resume(user_id, thread_fresh["resume_id"]) if thread_fresh.get("resume_id") else None
 
             if resume:
+                resume_ids = thread_fresh.get("resume_ids") or []
+                multi_note = ""
+                if len(resume_ids) > 1:
+                    multi_note = (
+                        f"\n\nNOTE: The user has uploaded {len(resume_ids)} resumes in this chat. "
+                        f"The text below is the MOST RECENT one ('{resume.get('filename', 'resume')}'). "
+                        "Work with this latest resume by default; only refer to an earlier upload if the user explicitly asks about it."
+                    )
                 dynamic_context = (
-                    "A resume IS attached to this conversation. Use it to ground every claim.\n"
-                    'Resume text:\n"""\n' + (resume.get("extracted_text", "")[:12000]) + '\n"""'
+                    "A resume IS attached to this conversation. Ground every claim in it.\n"
+                    'Resume text:\n"""\n' + (resume.get("extracted_text", "")[:12000]) + '\n"""' + multi_note
                 )
             else:
                 dynamic_context = (
-                    "No resume is attached yet. If the user wants resume analysis or a "
-                    "resume-grounded interview, ask them to upload one with the 📎 button."
+                    "CRITICAL — NO resume is attached to this conversation. You do NOT have the user's resume. "
+                    "You therefore CANNOT review, score, or analyze a resume, and you must NOT invent or assume ANY "
+                    "resume content, skills, experience, employers, or an ATS score. "
+                    "If the user asks to review their resume, give an ATS score, or run a resume-grounded interview, "
+                    "respond with ONE short line asking them to upload their resume with the 📎 button — do NOT output "
+                    "a score, strengths, fixes, or any made-up resume review. "
+                    "For general questions (not about their specific resume), answer normally."
                 )
 
             messages = build_context(
@@ -161,6 +177,20 @@ async def websocket_endpoint(websocket: WebSocket, thread_id: str, token: str = 
 
             async def run_graph():
                 final_content = ""
+                # ── Per-turn timing + accumulators (Sophia streaming-logs pattern) ──
+                turn_started_at = time.monotonic()
+                stream_chunks = 0                 # how many token deltas we streamed
+                tool_starts: dict[str, float] = {}  # run_id → monotonic start (for ms)
+                turn_tool_calls: list[dict] = []  # {tool, ms, status} per tool fired
+                turn_usage = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
+
+                logger.info(
+                    "ws_turn_started",
+                    msg_chars=len(text),
+                    history_msgs=len(history_msgs),
+                    resume_attached=bool(resume),
+                    resume_count=len(thread_fresh.get("resume_ids") or []),
+                )
                 try:
                     async for event in graph.astream_events(state, config, version="v2"):
                         kind = event["event"]
@@ -170,25 +200,83 @@ async def websocket_endpoint(websocket: WebSocket, thread_id: str, token: str = 
                                 continue
                             if isinstance(chunk, str):
                                 final_content += chunk
+                                stream_chunks += 1
                                 await queue.put({"event_type": "token", "thread_id": thread_id, "data": {"delta": chunk}})
                             elif isinstance(chunk, list):
                                 for c in chunk:
                                     if isinstance(c, dict) and c.get("type") == "text":
                                         tv = c.get("text", "")
                                         final_content += tv
+                                        stream_chunks += 1
                                         await queue.put({"event_type": "token", "thread_id": thread_id, "data": {"delta": tv}})
                         elif kind == "on_tool_start":
                             name = event.get("name", "")
+                            run_id = event.get("run_id", "")
+                            tool_starts[run_id] = time.monotonic()
+                            tool_input = event.get("data", {}).get("input", {}) or {}
+                            query = tool_input.get("query") if isinstance(tool_input, dict) else None
+                            logger.info("tool_started", tool=name, run_id=run_id, query=query)
+                            # Live "Reasoning" card: tool_call opens a step in the card.
+                            await queue.put({
+                                "event_type": "tool_call",
+                                "thread_id": thread_id,
+                                "data": {"call_id": run_id, "tool": name, "query": query},
+                            })
+                            # Back-compat: plain status line for any client not rendering the card.
                             await queue.put({
                                 "event_type": "status",
                                 "thread_id": thread_id,
                                 "data": {"message": TOOL_STATUS.get(name, f"Working ({name})…")},
                             })
+                        elif kind == "on_tool_end":
+                            name = event.get("name", "")
+                            run_id = event.get("run_id", "")
+                            start = tool_starts.pop(run_id, None)
+                            ms = int((time.monotonic() - start) * 1000) if start else None
+                            out = event.get("data", {}).get("output")
+                            # web_search is content_and_artifact → structured sources live on .artifact.
+                            artifact = getattr(out, "artifact", None) or {}
+                            sources = artifact.get("results", []) if isinstance(artifact, dict) else []
+                            status = "error" if (isinstance(artifact, dict) and artifact.get("error")) else "ok"
+                            logger.info("tool_finished", tool=name, run_id=run_id, ms=ms,
+                                        status=status, sources=len(sources))
+                            turn_tool_calls.append({"tool": name, "ms": ms, "status": status,
+                                                    "sources": len(sources)})
+                            # Close the step on the card, then fan out the searched sources.
+                            await queue.put({
+                                "event_type": "tool_result",
+                                "thread_id": thread_id,
+                                "data": {"call_id": run_id, "tool": name, "status": status,
+                                         "ms": ms, "count": len(sources)},
+                            })
+                            for s in sources:
+                                await queue.put({
+                                    "event_type": "source_found",
+                                    "thread_id": thread_id,
+                                    "data": {"call_id": run_id, "url": s.get("url"), "title": s.get("title")},
+                                })
+                        elif kind == "on_chat_model_end":
+                            out = event.get("data", {}).get("output")
+                            usage = getattr(out, "usage_metadata", None) or {}
+                            rmeta = getattr(out, "response_metadata", None) or {}
+                            for k in ("input_tokens", "output_tokens", "total_tokens"):
+                                v = usage.get(k)
+                                if isinstance(v, int):
+                                    turn_usage[k] += v
+                            logger.info(
+                                "chat_model_end",
+                                model=rmeta.get("model_name"),
+                                finish_reason=rmeta.get("finish_reason"),
+                                input_tokens=usage.get("input_tokens"),
+                                output_tokens=usage.get("output_tokens"),
+                            )
 
                     # Defensive cleanup of any leaked tool syntax / standby filler.
                     final_content = _clean_reply(final_content)
                     if not final_content:
                         final_content = "Sorry — I couldn't generate a response. Please try again."
+                        logger.warning("ws_empty_reply", stream_chunks=stream_chunks,
+                                       n_tool_calls=len(turn_tool_calls))
 
                     asst = repo.insert_message(thread_id, user_id, "assistant", final_content)
                     msg_id = asst["_id"]
@@ -199,6 +287,20 @@ async def websocket_endpoint(websocket: WebSocket, thread_id: str, token: str = 
                         "thread_id": thread_id,
                         "data": {"message_id": msg_id, "content": final_content},
                     })
+
+                    # One-line per-turn summary (Sophia `turn_persisted` analog): the
+                    # whole turn's cost + shape at a glance, no log-trawling needed.
+                    logger.info(
+                        "turn_completed",
+                        message_id=msg_id,
+                        reply_chars=len(final_content),
+                        stream_chunks=stream_chunks,
+                        n_tool_calls=len(turn_tool_calls),
+                        tools=[t["tool"] for t in turn_tool_calls],
+                        input_tokens=turn_usage["input_tokens"],
+                        output_tokens=turn_usage["output_tokens"],
+                        latency_ms=int((time.monotonic() - turn_started_at) * 1000),
+                    )
 
                     # Auto-name the conversation from the first exchange.
                     new_title = await maybe_generate_title(thread_id, user_id)
@@ -214,7 +316,14 @@ async def websocket_endpoint(websocket: WebSocket, thread_id: str, token: str = 
                     msg_count = repo.count_messages(thread_id, user_id)
                     trigger_summary_if_needed(thread_id, user_id, msg_count, (fresh or {}).get("summary_covers_until", 0))
                 except Exception as e:
-                    logger.error("graph_execution_failed", error=str(e))
+                    logger.error(
+                        "graph_execution_failed",
+                        error=str(e),
+                        error_type=type(e).__name__,
+                        stream_chunks=stream_chunks,
+                        n_tool_calls=len(turn_tool_calls),
+                        latency_ms=int((time.monotonic() - turn_started_at) * 1000),
+                    )
                     await queue.put({
                         "event_type": "error",
                         "thread_id": thread_id,

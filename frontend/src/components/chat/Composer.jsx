@@ -97,17 +97,17 @@ export default function Composer({ onSend, onUpload, disabled, uploading, pendin
             </button>
           </div>
         )}
-        <div className="flex items-end gap-1.5 rounded-2xl border border-border bg-card p-2 shadow-lg transition-all focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/10">
+        <div className="flex items-end gap-1.5 rounded-[24px] border border-border/60 bg-card p-2.5 shadow-floating transition-all focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/10">
           <input ref={fileRef} type="file" accept=".pdf,.docx,.txt,.md" className="hidden" onChange={onFile} />
           <Button
             variant="ghost"
             size="icon"
-            className="h-9 w-9 shrink-0 rounded-full text-muted-foreground hover:text-foreground"
+            className="h-10 w-10 shrink-0 rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground"
             onClick={() => fileRef.current?.click()}
             disabled={uploading}
             title="Upload resume (PDF, DOCX, TXT, MD)"
           >
-            {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Paperclip className="h-5 w-5" />}
+            {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Paperclip className="h-[22px] w-[22px]" />}
           </Button>
 
           <textarea
@@ -120,7 +120,7 @@ export default function Composer({ onSend, onUpload, disabled, uploading, pendin
             }}
             onKeyDown={onKeyDown}
             placeholder="Message Caliber…"
-            className="max-h-40 min-h-[40px] flex-1 resize-none bg-transparent px-1.5 py-2 text-[15px] leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
+            className="max-h-40 min-h-[40px] flex-1 resize-none bg-transparent px-2 py-2 text-[15px] leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
           />
 
           {SpeechRecognition && (
@@ -128,8 +128,8 @@ export default function Composer({ onSend, onUpload, disabled, uploading, pendin
               variant="ghost"
               size="icon"
               className={cn(
-                'h-9 w-9 shrink-0 rounded-full text-muted-foreground hover:text-foreground',
-                listening && 'animate-pulse bg-destructive/15 text-destructive'
+                'h-10 w-10 shrink-0 rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground',
+                listening && 'animate-pulse bg-destructive/15 text-destructive hover:bg-destructive/15 hover:text-destructive'
               )}
               onClick={toggleMic}
               title={listening ? 'Stop' : 'Voice input'}
@@ -140,11 +140,11 @@ export default function Composer({ onSend, onUpload, disabled, uploading, pendin
 
           <Button
             size="icon"
-            className="h-9 w-9 shrink-0 rounded-full"
+            className="h-10 w-10 shrink-0 rounded-full bg-gradient-to-r from-primary to-accent text-primary-foreground border-0 shadow-soft hover:opacity-90"
             onClick={submit}
             disabled={disabled || !text.trim()}
           >
-            <ArrowUp className="h-5 w-5" />
+            <ArrowUp className="h-[22px] w-[22px]" />
           </Button>
         </div>
         <p className="mt-2 text-center text-[11px] text-muted-foreground">

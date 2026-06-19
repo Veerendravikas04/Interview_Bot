@@ -12,13 +12,21 @@ import * as api from './lib/services/api'
 const TOKEN_KEY = 'careerForgeToken'
 
 export default function App() {
-  const [view, setView] = useState(localStorage.getItem(TOKEN_KEY) ? 'app' : 'landing')
-  const [booting, setBooting] = useState(!!localStorage.getItem(TOKEN_KEY))
+  // A password-reset deep link (?reset=<token>) always lands on the auth/reset
+  // screen, regardless of any stored session.
+  const resetTokenParam = typeof window !== 'undefined'
+    ? new URLSearchParams(window.location.search).get('reset')
+    : null
+  const [view, setView] = useState(
+    resetTokenParam ? 'auth' : localStorage.getItem(TOKEN_KEY) ? 'app' : 'landing'
+  )
+  const [booting, setBooting] = useState(!resetTokenParam && !!localStorage.getItem(TOKEN_KEY))
   const [user, setUser] = useState(null)
-  const { setThreads, addThread, setActiveThread, setMessages, resetActive, patchThread, removeThread } = useChatStore()
+  const { setThreads, addThread, setActiveThread, setMessages, resetActive, patchThread, removeThread, setCurrentUser } = useChatStore()
 
   // Session restore: keep the user logged in across refreshes unless the token is invalid.
   useEffect(() => {
+    if (resetTokenParam) { setBooting(false); return }  // reset link → show reset form
     const token = localStorage.getItem(TOKEN_KEY)
     if (!token) {
       setBooting(false)
@@ -28,13 +36,21 @@ export default function App() {
       .me()
       .then((u) => {
         setUser(u)
+        setCurrentUser(u)
         setView('app')
         setBooting(false)
       })
-      .catch(() => {
-        localStorage.removeItem(TOKEN_KEY)
-        localStorage.removeItem('careerForgeUserId')
-        setView('auth')
+      .catch((err) => {
+        // Only log out on a genuine auth failure (401). A network error (e.g. the
+        // backend is down/restarting) must NOT discard a valid stored session —
+        // keep the user in the app; their requests retry once the backend is back.
+        if (err?.status === 401) {
+          localStorage.removeItem(TOKEN_KEY)
+          localStorage.removeItem('careerForgeUserId')
+          setView('auth')
+        } else {
+          setView('app')
+        }
         setBooting(false)
       })
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -57,9 +73,25 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view])
 
+  // Any authenticated request that 401s (expired/invalid token) bounces to login.
+  useEffect(() => {
+    const onUnauth = () => {
+      resetActive()
+      setThreads([])
+      setUser(null)
+      setCurrentUser(null)
+      setView('auth')
+    }
+    window.addEventListener('caliber:unauthorized', onUnauth)
+    return () => window.removeEventListener('caliber:unauthorized', onUnauth)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const handleLoggedIn = async () => {
     try {
-      setUser(await api.me())
+      const u = await api.me()
+      setUser(u)
+      setCurrentUser(u)
     } catch (_) {
       /* non-fatal */
     }
@@ -141,7 +173,7 @@ export default function App() {
   }
 
   if (view === 'landing') return <LandingPage onGetStarted={() => setView('auth')} />
-  if (view === 'auth') return <Auth onLoginSuccess={handleLoggedIn} onBack={() => setView('landing')} />
+  if (view === 'auth') return <Auth onLoginSuccess={handleLoggedIn} onBack={() => setView('landing')} resetToken={resetTokenParam} />
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-background text-foreground">

@@ -34,6 +34,12 @@ async function request(path, { method = 'GET', body, isForm } = {}) {
     } catch (_) {
       /* non-JSON error */
     }
+    // Expired/invalid session on an authenticated request → clear + bounce to login.
+    if (res.status === 401 && getToken()) {
+      localStorage.removeItem(TOKEN_KEY)
+      localStorage.removeItem('careerForgeUserId')
+      window.dispatchEvent(new Event('caliber:unauthorized'))
+    }
     const e = new Error(message)
     e.traceId = traceId
     e.code = code
@@ -46,6 +52,8 @@ async function request(path, { method = 'GET', body, isForm } = {}) {
 
 // ---- Auth ----
 export const me = () => request('/auth/me')
+export const forgotPassword = (email) => request('/auth/forgot-password', { method: 'POST', body: { email } })
+export const resetPassword = (token, password) => request('/auth/reset-password', { method: 'POST', body: { token, password } })
 
 // ---- Threads ----
 export const listThreads = () => request('/threads/')
@@ -60,6 +68,14 @@ export const attachResume = (threadId, resumeId) =>
 
 // ---- Resumes ----
 export const getResume = (resumeId) => request(`/resumes/${resumeId}`)
+export const getAtsReport = (resumeId, role, refresh) => {
+  const p = new URLSearchParams()
+  if (role) p.set('role', role)
+  if (refresh) p.set('refresh', 'true')
+  const qs = p.toString()
+  return request(`/resumes/${resumeId}/ats-report${qs ? `?${qs}` : ''}`)
+}
+export const getLatexResume = (resumeId, role) => request(`/resumes/${resumeId}/latex${role ? `?role=${encodeURIComponent(role)}` : ''}`)
 export async function getResumeFile(resumeId) {
   const res = await fetch(`${BASE}/resumes/${resumeId}/file`, { headers: authHeaders() })
   if (!res.ok) throw new Error('Could not load the original file')
