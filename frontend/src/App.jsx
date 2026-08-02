@@ -167,6 +167,18 @@ export default function App() {
 
   const [profileOpen, setProfileOpen] = useState(false)
 
+  // Sidebar open/collapsed (ChatGPT-style). Persisted on desktop; mobile always
+  // starts closed so the drawer never covers content on load.
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (typeof window === 'undefined') return true
+    if (window.innerWidth < 768) return false
+    const saved = localStorage.getItem('caliber:sidebarOpen')
+    return saved === null ? true : saved === '1'
+  })
+  useEffect(() => {
+    localStorage.setItem('caliber:sidebarOpen', sidebarOpen ? '1' : '0')
+  }, [sidebarOpen])
+
   if (booting) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-background text-foreground">
@@ -181,6 +193,8 @@ export default function App() {
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-background text-foreground">
       <Sidebar
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
         onNewChat={newChat}
         onSelect={selectThread}
         onLogout={logout}
@@ -188,7 +202,7 @@ export default function App() {
         onDelete={handleDelete}
       />
       <main className="flex min-w-0 flex-1 flex-col">
-        <TopBar onLogout={logout} user={user} onUserUpdated={setCurrentUser} onOpenProfile={() => setProfileOpen(true)} />
+        <TopBar onLogout={logout} user={user} onUserUpdated={setCurrentUser} onOpenProfile={() => setProfileOpen(true)} onToggleSidebar={() => setSidebarOpen((v) => !v)} />
         <ChatPanel ensureThread={ensureThread} />
       </main>
       <ProfileModal 

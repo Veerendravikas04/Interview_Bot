@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Plus, MessageSquare, LogOut, Gauge, MoreHorizontal, Pencil, Trash2, Search } from 'lucide-react'
+import { Plus, MessageSquare, LogOut, Gauge, MoreHorizontal, Pencil, Trash2, Search, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -89,7 +89,8 @@ function ThreadItem({ t, active, onSelect, onRename, onDelete }) {
           <button
             className={cn(
               'mr-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-opacity hover:bg-background/60 hover:text-foreground',
-              active ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+              // Always visible on touch (no hover); hover-reveal on desktop.
+              active ? 'opacity-100' : 'opacity-100 md:opacity-0 md:group-hover:opacity-100'
             )}
             onClick={(e) => e.stopPropagation()}
           >
@@ -117,7 +118,7 @@ function ThreadItem({ t, active, onSelect, onRename, onDelete }) {
   )
 }
 
-export default function Sidebar({ onNewChat, onSelect, onLogout, onRename, onDelete }) {
+export default function Sidebar({ open = true, onClose, onNewChat, onSelect, onLogout, onRename, onDelete }) {
   const { threads, activeThreadId } = useChatStore()
   const [query, setQuery] = useState('')
   const filtered = query.trim()
@@ -125,24 +126,65 @@ export default function Sidebar({ onNewChat, onSelect, onLogout, onRename, onDel
     : threads
   const groups = groupThreads(filtered)
 
+  // On mobile the sidebar is an overlay drawer — close it after an action so the
+  // chat is visible again. On desktop (md+) it stays put.
+  const closeIfMobile = () => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) onClose?.()
+  }
+  const handleNewChat = () => { onNewChat?.(); closeIfMobile() }
+  const handleSelect = (id) => { onSelect?.(id); closeIfMobile() }
+
   return (
-    <aside className="flex h-full w-72 shrink-0 flex-col border-r border-border bg-card/30">
-      <button
-        onClick={onNewChat}
-        className="flex items-center gap-3 px-5 py-5 text-left transition-opacity hover:opacity-80"
-        title="New chat"
+    <>
+      {/* Backdrop: mobile only, when the drawer is open */}
+      <div
+        className={cn(
+          'fixed inset-0 z-40 bg-black/50 backdrop-blur-sm transition-opacity duration-200 md:hidden',
+          open ? 'opacity-100' : 'pointer-events-none opacity-0'
+        )}
+        onClick={onClose}
+        aria-hidden="true"
+      />
+
+      <aside
+        className={cn(
+          'z-50 flex h-full w-72 shrink-0 flex-col border-r border-border bg-card',
+          // Mobile: fixed off-canvas drawer that slides in/out.
+          'fixed inset-y-0 left-0 transition-transform duration-200 ease-in-out',
+          // Desktop: in-flow; collapses to zero width (ChatGPT-style).
+          'md:static md:z-auto md:bg-card/30 md:transition-[width] md:duration-200',
+          open
+            ? 'translate-x-0 md:w-72'
+            : '-translate-x-full md:w-0 md:translate-x-0 md:overflow-hidden md:border-r-0'
+        )}
       >
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-soft">
-          <Gauge className="h-5 w-5" />
-        </div>
-        <span className="text-2xl font-bold font-heading tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-          Caliber
-        </span>
-      </button>
+      <div className="flex items-center justify-between pr-2">
+        <button
+          onClick={handleNewChat}
+          className="flex items-center gap-3 px-5 py-5 text-left transition-opacity hover:opacity-80"
+          title="New chat"
+        >
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-soft">
+            <Gauge className="h-5 w-5" />
+          </div>
+          <span className="text-2xl font-bold font-heading tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            Caliber
+          </span>
+        </button>
+        {/* Close button: mobile drawer only */}
+        <button
+          onClick={onClose}
+          className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground md:hidden"
+          title="Close sidebar"
+          aria-label="Close sidebar"
+        >
+          <X className="h-5 w-5" />
+        </button>
+      </div>
 
       <div className="px-4 pb-3">
-        <Button 
-          onClick={onNewChat} 
+        <Button
+          onClick={handleNewChat}
           className="w-full justify-start gap-2 shadow-soft bg-gradient-to-r from-primary/90 to-accent/90 hover:from-primary hover:to-accent border-0 text-primary-foreground font-medium rounded-xl h-10"
         >
           <Plus className="h-4 w-4" /> New Chat
@@ -178,7 +220,7 @@ export default function Sidebar({ onNewChat, onSelect, onLogout, onRename, onDel
                 key={t.id}
                 t={t}
                 active={activeThreadId === t.id}
-                onSelect={onSelect}
+                onSelect={handleSelect}
                 onRename={onRename}
                 onDelete={onDelete}
               />
@@ -196,6 +238,7 @@ export default function Sidebar({ onNewChat, onSelect, onLogout, onRename, onDel
           <LogOut className="h-4 w-4" /> Logout
         </Button>
       </div>
-    </aside>
+      </aside>
+    </>
   )
 }

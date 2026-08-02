@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Sun, Moon, LogOut, Sparkles, Copy, Check, User } from 'lucide-react'
+import { Sun, Moon, LogOut, Sparkles, Copy, Check, User, PanelLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import {
@@ -13,7 +13,7 @@ import {
 import { useChatStore } from '@/store/chatStore'
 import { getTheme, applyTheme } from '@/lib/theme'
 
-export default function TopBar({ onLogout, user, onUserUpdated, onOpenProfile }) {
+export default function TopBar({ onLogout, user, onUserUpdated, onOpenProfile, onToggleSidebar }) {
   const { threads, activeThreadId, messages } = useChatStore()
   const active = threads.find((t) => t.id === activeThreadId)
   const isReturningUser = threads.length > 1;
@@ -54,7 +54,15 @@ export default function TopBar({ onLogout, user, onUserUpdated, onOpenProfile })
     <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-background/70 px-4 backdrop-blur">
       {/* Left: context */}
       <div className="flex min-w-0 items-center gap-2.5">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+        <button
+          onClick={onToggleSidebar}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          title="Toggle sidebar"
+          aria-label="Toggle sidebar"
+        >
+          <PanelLeft className="h-[18px] w-[18px]" />
+        </button>
+        <span className="hidden h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary sm:flex">
           <Sparkles className="h-4 w-4" />
         </span>
         <div className="min-w-0">

@@ -83,13 +83,13 @@ const Auth = ({ onLoginSuccess, onBack, resetToken }) => {
     : isLogin ? 'Log in' : 'Sign up';
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-background p-8">
+    <div className="flex justify-center items-center min-h-screen bg-background p-4 sm:p-8">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         className="w-full max-w-[420px] bg-card rounded-[24px] shadow-glow relative overflow-hidden border border-primary/40"
       >
-        <div className="relative z-10 p-10 pb-8">
+        <div className="relative z-10 p-6 pb-8 sm:p-10">
           {onBack && !isReset && (
             <button
               type="button"
