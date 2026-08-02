@@ -1,5 +1,8 @@
 fastapi
 uvicorn
+# uvicorn's WebSocket protocol impl. Explicit because it otherwise arrives only
+# transitively via langsmith/langgraph-sdk, and an upstream drop would kill all WS.
+websockets
 python-multipart
 langchain
 langchain-core

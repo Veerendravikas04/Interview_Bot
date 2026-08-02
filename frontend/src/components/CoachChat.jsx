@@ -3,6 +3,7 @@ import { Send, User, Bot, Mic, MicOff, Download, Sparkles, FileText, Activity } 
 import ReactMarkdown from 'react-markdown';
 import { motion, AnimatePresence } from 'framer-motion';
 import jsPDF from 'jspdf';
+import { WS_THREADS } from '@/lib/config';
 
 const sanitizeContent = (text) => {
   if (!text) return text;
@@ -95,7 +96,7 @@ const CoachChat = ({ threadId, token, onProceed, resumeText, setResumeText, extr
   }, [messages, isLoading, statusText]);
 
   useEffect(() => {
-    const wsUrl = `ws://localhost:8000/api/ws/threads/${threadId}?token=${token}`;
+    const wsUrl = `${WS_THREADS}/${threadId}?token=${token}`;
     ws.current = new WebSocket(wsUrl);
 
     ws.current.onopen = () => {

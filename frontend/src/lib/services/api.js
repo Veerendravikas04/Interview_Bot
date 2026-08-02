@@ -1,7 +1,9 @@
 // Single API layer: attaches the JWT and surfaces the {error,...} envelope.
 // No silent fallbacks — every failure throws so the UI can show it.
 
-const BASE = 'http://localhost:8000/api'
+import { API_BASE } from '@/lib/config'
+
+const BASE = API_BASE
 const TOKEN_KEY = 'careerForgeToken'
 
 export function getToken() {
