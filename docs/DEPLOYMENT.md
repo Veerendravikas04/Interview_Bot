@@ -152,8 +152,11 @@ because Render's free tier does not provide a separate pre-deploy job.
 | `CEREBRAS_API` | optional | fallback LLM |
 | `TAVILY_API_KEY` | optional | enables the `web_search` tool |
 | `GITHUB_TOKEN` | optional | enables `github_profile` tool (higher rate limit) |
-| `FRONTEND_URL` | optional | Vercel URL — used in password-reset links |
-| `SMTP_HOST/PORT/USER/PASS`, `FROM_EMAIL` | local/paid backend only | password-reset email (Gmail → App Password) |
+| `FRONTEND_URL` | for reset links | Vercel URL — used in password-reset links (defaulted in `render.yaml`) |
+| `BREVO_API_KEY` | for password reset | Brevo v3 API key (`xkeysib-…`) — HTTP email that works on free Render |
+| `FROM_EMAIL` | for password reset | a **verified** Brevo sender address |
+| `FROM_NAME` | optional | sender display name (default `Caliber`, set in `render.yaml`) |
+| `SMTP_HOST/PORT/USER/PASS` | local/paid only | SMTP fallback; **blocked on free Render** — use Brevo instead |
 | `JWT_EXPIRE_DAYS`, `RESET_TOKEN_TTL_MIN` | optional | tuning (defaults fine) |
 | `GROQ_MODEL`, `MISTRAL_MODEL`, `CEREBRAS_MODEL` | optional | model overrides |
 
@@ -171,10 +174,10 @@ because Render's free tier does not provide a separate pre-deploy job.
 > ⚠️ **Vite env vars are baked in at build time.** Changing `VITE_API_URL` in
 > Vercel later requires a **redeploy** to take effect.
 
-> ⚠️ **Free Render limitation:** free web services cannot send outbound traffic
-> on SMTP ports, including `587`. Leave the SMTP variables unset for this free
-> deployment. Login and signup work; password-reset emails require a future move
-> to an HTTPS email API or a paid backend service.
+> ⚠️ **Free Render blocks outbound SMTP** (port `587`), so the SMTP path won't
+> work here. Password-reset email is sent via the **Brevo HTTP API** instead
+> (`BREVO_API_KEY` + a verified `FROM_EMAIL`). Free Brevo = 300 emails/day.
+> Without these set, login/signup still work; only the reset email is skipped.
 
 ---
 

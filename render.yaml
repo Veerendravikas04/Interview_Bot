@@ -21,3 +21,13 @@ services:
       # Set to the Vercel URL once the frontend is deployed (see DEPLOYMENT.md step 4).
       - key: CORS_ORIGINS
         sync: false
+      # Password-reset email via Brevo HTTP API (works on free Render; SMTP is blocked).
+      # Set BREVO_API_KEY (xkeysib-…) and FROM_EMAIL (a *verified* Brevo sender) in the dashboard.
+      - key: BREVO_API_KEY
+        sync: false
+      - key: FROM_EMAIL
+        sync: false
+      - key: FROM_NAME
+        value: Caliber
+      - key: FRONTEND_URL
+        value: https://caliber-prep.vercel.app
