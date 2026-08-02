@@ -1,7 +1,8 @@
 import { useEffect, useRef, useCallback } from 'react'
 import { getToken } from '@/lib/services/api'
+import { WS_THREADS } from '@/lib/config'
 
-const WS_BASE = 'ws://localhost:8000/api/ws/threads'
+const WS_BASE = WS_THREADS
 
 // One WebSocket per open thread. Streams token/status/message_complete/error,
 // heartbeat-aware, capped auto-reconnect on unclean close.

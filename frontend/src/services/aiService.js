@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:8000/api';
+import { API_BASE as API_URL } from '@/lib/config';
 
 const getHeaders = () => {
   const token = localStorage.getItem('careerForgeToken');
@@ -27,19 +27,14 @@ export const uploadResume = async (file) => {
 };
 
 export const extractSkills = async (resumeId, resumeText) => {
-  try {
-    const response = await fetch(`${API_URL}/resumes/extract-skills`, {
-      method: 'POST',
-      headers: getHeaders(),
-      body: JSON.stringify({ resume_id: resumeId, resumeText })
-    });
-    if (!response.ok) throw new Error("Failed to extract skills");
-    const data = await response.json();
-    return data.skills || [];
-  } catch (error) {
-    console.error("Error extracting skills:", error);
-    return [{"skill": "React", "confidence": 0.9}, {"skill": "JavaScript", "confidence": 0.85}, {"skill": "Python", "confidence": 0.8}];
-  }
+  const response = await fetch(`${API_URL}/resumes/extract-skills`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ resume_id: resumeId, resumeText })
+  });
+  if (!response.ok) throw new Error("Failed to extract skills");
+  const data = await response.json();
+  return data.skills || [];
 };
 
 export const createThread = async (resumeId, difficulty, maxQuestions, selectedSkills) => {

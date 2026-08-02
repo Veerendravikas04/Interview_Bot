@@ -3,6 +3,7 @@ import { Send, User, Bot, Mic, MicOff, Lightbulb, Clock, Code2 } from 'lucide-re
 import ReactMarkdown from 'react-markdown';
 import { motion, AnimatePresence } from 'framer-motion';
 import Editor from '@monaco-editor/react';
+import { WS_THREADS } from '@/lib/config';
 
 const sanitizeContent = (text) => {
   if (!text) return text;
@@ -36,7 +37,7 @@ const ChatWindow = ({ threadId, token, timeLimit, questionCount: initialQuestion
 
   // Connect to WebSocket
   useEffect(() => {
-    const wsUrl = `ws://localhost:8000/api/ws/threads/${threadId}?token=${token}`;
+    const wsUrl = `${WS_THREADS}/${threadId}?token=${token}`;
     ws.current = new WebSocket(wsUrl);
 
     ws.current.onopen = () => {

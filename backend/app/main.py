@@ -13,6 +13,7 @@ from app.api.auth import router as auth_router
 from app.api.ws import router as ws_router
 from app.core.logging import setup_logging
 from app.core.middleware import TraceMiddleware
+from migrations.runner import run_migrations
 
 setup_logging()
 
@@ -38,6 +39,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 logger.info("cors_configured", origins=CORS_ORIGINS)
+
+
+@app.on_event("startup")
+async def apply_migrations_on_startup():
+    """Keep hosted deployments schema-ready without a separate paid run job."""
+    run_migrations()
+
+
+@app.get("/health", tags=["health"])
+async def health_check():
+    """Liveness endpoint for the hosting platform; it intentionally does no I/O."""
+    return {"status": "ok"}
 
 def get_trace_id():
     return structlog.contextvars.get_contextvars().get("trace_id", "unknown")

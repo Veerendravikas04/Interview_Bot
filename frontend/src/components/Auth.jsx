@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Lock, Mail, User as UserIcon, ArrowRight, ArrowLeft } from 'lucide-react';
 import * as api from '@/lib/services/api';
+import { API_ORIGIN_URL } from '@/lib/config';
 
 // mode: 'login' | 'signup' | 'forgot' | 'reset'
 const Auth = ({ onLoginSuccess, onBack, resetToken }) => {
@@ -48,7 +49,7 @@ const Auth = ({ onLoginSuccess, onBack, resetToken }) => {
         ? JSON.stringify({ email, password })
         : JSON.stringify({ email, password, name: fullName });
 
-      const response = await fetch(`http://localhost:8000${endpoint}`, {
+      const response = await fetch(`${API_ORIGIN_URL}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: payload,
