@@ -94,7 +94,7 @@ export default function ResumePreview({ resumeId, filename, onClose }) {
   }
 
   return (
-    <aside className={`flex h-full flex-col border-l border-border bg-card animate-fade-in z-50 shadow-2xl transition-all duration-200 ${expanded ? 'absolute right-0 top-0 w-[min(1100px,92vw)]' : 'relative w-[600px] shrink-0'}`}>
+    <aside className={`flex h-full flex-col border-l border-border bg-card animate-fade-in z-50 shadow-2xl transition-all duration-200 ${expanded ? 'absolute right-0 top-0 w-[min(1100px,92vw)]' : 'fixed inset-0 w-full sm:relative sm:inset-auto sm:w-[600px] sm:shrink-0'}`}>
       <div className="flex flex-col border-b border-border bg-card/60 px-4 py-3 pb-0">
         <div className="flex items-center justify-between mb-3">
           <div className="flex min-w-0 items-center gap-2">
